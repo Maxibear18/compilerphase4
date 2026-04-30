@@ -3,7 +3,10 @@
 #include<string.h>
 #include<tree.h>
 #include<strtab.h>
-
+extern struct treenode *ast;
+extern int yyparse(void);
+extern int yy_flex_debug;
+void print_sym_tab(void);
 extern FILE* yyin;
 
 void printhelp(){
@@ -13,10 +16,16 @@ void printhelp(){
     printf("\t-h,--help:\tPrint this help information and exit.\n\n");
 }
 
+
 int main(int argc, char *argv[]) {
     int p_ast = 0;
     int p_symtab = 0;
 
+    if(argc == 1) {
+        yyin = stdin;
+    } else {
+        yyin = fopen(argv[argc - 1], "r");
+    }
     // Skip first arg (program name), then check all but last for options.
     for(int i=1; i < argc - 1; i++){
         if(strcmp(argv[i],"-h")==0 || strcmp(argv[i],"--help")==0){
@@ -41,7 +50,7 @@ int main(int argc, char *argv[]) {
         printf("error: unable to read source file %s\n",argv[argc-1]);
         return -1;
     }
-
+    yy_flex_debug = 0;
     if (!yyparse()){
         printf("Compilation finished.\n\n");
         if(p_ast)
@@ -49,5 +58,6 @@ int main(int argc, char *argv[]) {
         if(p_symtab)
             print_sym_tab();
     }
+    fclose(yyin);
     return 0;
 }
