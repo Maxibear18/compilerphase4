@@ -21,8 +21,8 @@ typedef struct strEntry{
 } symEntry;
 
 /* You should use a linear linklist to keep track of all parameters passed to a function. The working_list_head should point to the beginning of the linklist and working_list_end should point to the end. Whenever a parameter is passed to a function, that node should also be added in this list. */
-param *working_list_head = NULL;
-param *working_list_end = NULL;
+//param *working_list_head = NULL;
+//param *working_list_end = NULL;
 
 typedef struct table_node{
     symEntry* strTable[MAXIDS];
@@ -33,7 +33,7 @@ typedef struct table_node{
     struct table_node* next; // Next subscope that shares the same parent
 } table_node; // Describes each node in the symbol table tree and is used to implement a tree for the nested scope as discussed in lecture 13 and 14.
 
-table_node* current_scope = NULL; // A global variable that should point to the symbol table node in the scope tree as discussed in lecture 13 and 14.
+//table_node* current_scope = NULL; // A global variable that should point to the symbol table node in the scope tree as discussed in lecture 13 and 14.
 
 
 
