@@ -1,131 +1,231 @@
 
 /* definitions */
-
+%option debug
 %{
-#include<stdio.h>
-#include"../obj/y.tab.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "../obj/y.tab.h"
 
+ /* integers to track line and column numbers */
 int scancol = 1;
 int yycol = 1;
 int scanlineno = 1;
 
-char* yyerrormsg;
 
+ /* char pointer to pass error messages to driver.c */
+char *scan_error_msg;
+
+ /* TODO: functions to update line and column numbers */
 void updateCol();
 void countLines();
-int processChar();
+
+ /* TODO: function to process a string literal */
+int processString();
+
 %}
 
-newline         \n
-whitespace      [ \t]+
+newline         (\r\n|\r|\n)
+whitespace      [\t ]+
 integer         0|[1-9][0-9]*
 integerlead0    0[0-9]+
-character       \'([^\']|\\[\\nt\'])\'
+character       [^"\\\n]
+charconst       \'([^\'\\\n]|\\[nt\"\\\'])\'
+letter          [A-Za-z]
+escape          \\.
 
-comment         \/\*([^\*]|\*[^\/])*\*\/
-untermcomment   \/\*([^\*]|\*[^\/])*
+ /* String can contain any characters between the double quotes */
+ /* other than a newline or unescaped doublequotes */
 
-identifier      [a-zA-Z][a-zA-Z0-9]*
-illidentifier   [0-9]+[a-zA-Z][a-zA-Z0-9]*
+string          \"({character}|{escape})*\"
+untermstring_eof    \"({character}|{escape})*
 
-yylineno = 1;
+ /* If the end quote is not found in the same line the string is unterminated */
+untermstring    \"({character}|{escape})*{newline}
+
+comment         [/][/].*
+multlncomment   "/*"([^*]|\*+[^*/]|\n)*\*+\/
+untermcomment   "/*"([^*]|\*+[^*/]|\n)*
+
+identifier      {letter}({letter}|{integer})*   
+illidentifier   {integer}+{letter}+
+
+int yylineno = 1; 
 
 %%
 
  /* rules */
 
- /* Keywords */;
-"if"            {updateCol(); return KWD_IF;}
-"else"          {updateCol(); return KWD_ELSE;}
-"while"         {updateCol(); return KWD_WHILE;}
-"int"           {updateCol(); return KWD_INT;}
-"char"          {updateCol(); return KWD_CHAR;}
-"return"        {updateCol(); return KWD_RETURN;}
-"void"          {updateCol(); return KWD_VOID;}
+ /* Keywords */
+"if"      { updateCol(); return IF; }
+"else"    { updateCol(); return ELSE; }
+"while"   { updateCol(); return WHILE; }
+"int"     { updateCol(); return INT; }
+"char"    { updateCol(); return CHAR; }
+"return"  { updateCol(); return RETURN; }
+"void"    { updateCol(); return VOID; }
 
- /* Operators */;
-\+              {updateCol(); return OPER_ADD;}
-\-              {updateCol(); return OPER_SUB;}
-\*              {updateCol(); return OPER_MUL;}
-\/              {updateCol(); return OPER_DIV;}
-\<=             {updateCol(); return OPER_LTE;}
-\>=             {updateCol(); return OPER_GTE;}
-\<              {updateCol(); return OPER_LT;}
-\>              {updateCol(); return OPER_GT;}
-==              {updateCol(); return OPER_EQ;}
-!=              {updateCol(); return OPER_NEQ;}
-=               {updateCol(); return OPER_ASGN;}
+"+"       { updateCol(); return PLUS; }
+"-"       { updateCol(); return MINUS; }
+"*"       { updateCol(); return MULT; }
+"/"       { updateCol(); return DIVIDE; }
+"<"       { updateCol(); return LESSTHAN; }
+">"       { updateCol(); return GREATERTHAN; }
+"<="      { updateCol(); return LESSTHANEQ; }
+">="      { updateCol(); return GREATERTHANEQ; }
+"=="      { updateCol(); return EQ; }
+"!="      { updateCol(); return NEQ; }
+"="       { updateCol(); return ASSIGN; }
+"["       { updateCol(); return LBRACKET; }
+"]"       { updateCol(); return RBRACKET; }
+"{"       { updateCol(); return LBRACE; }
+"}"       { updateCol(); return RBRACE; }
+"("       { updateCol(); return LPARENTHESIS; }
+")"       { updateCol(); return RPARENTHESIS; }
+","       { updateCol(); return COMMA; }
+";"       { updateCol(); return SEMICOLON; }
+"@"       { updateCol(); return OPER_AT; }
+"++"      { updateCol(); return OPER_INC; }
+"--"      { updateCol(); return OPER_DEC; }
+"&&"      { updateCol(); return OPER_AND; }
+"||"      { updateCol(); return OPER_OR; }
+"!"       { updateCol(); return OPER_NOT; }
 
- /* Punctuation */;
-\[              {updateCol(); return LSQ_BRKT;}
-\]              {updateCol(); return RSQ_BRKT;}
-\{              {updateCol(); return LCRLY_BRKT;}
-\}              {updateCol(); return RCRLY_BRKT;}
-\(              {updateCol(); return LPAREN;}
-\)              {updateCol(); return RPAREN;}
-,               {updateCol(); return COMMA;}
-;               {updateCol(); return SEMICLN;}
+ /* Identifiers */
+{identifier} {
+    updateCol();
+    yylval.strval = strdup(yytext);
+    return ID;
+}
 
- /* Identifiers */;
-{identifier}    {updateCol();
-                 yylval.strval = (char *) malloc(yyleng *sizeof(char));
-                 strcpy(yylval.strval, yytext);
-                 return ID;}
-{illidentifier} {updateCol(); yyerrormsg = "Identifiers may not start with a digit"; return ERROR;}
+{integer} {
+    updateCol();
+    yylval.value = atoi(yytext);
+    return INTCONST;
+}
+{illidentifier}   { updateCol(); return ILLEGAL_TOK; }
 
- /* Constants */;
-{integer}       {updateCol(); yylval.value = atoi(yytext); return INTCONST;}
-{integerlead0}  {updateCol(); yyerrormsg = "Integers may not have leading zeros"; return ERROR;}
-{character}     {updateCol(); return processChar();}
+ /* Constants */
+{integerlead0}    { updateCol(); return ILLEGAL_TOK; }
+{newline}         { countLines(); }
+{whitespace}      { updateCol(); }
+{charconst}       { updateCol(); yylval.value = yytext[1]; return CHARCONST;}
+{string}          { return processString(); }
+{untermstring} {
+    int startCol  = scancol;
 
- /* Comments */;
-{comment}       {updateCol(); /* skip comments */}
-{untermcomment} {updateCol(); yyerrormsg = "Unterminated comment"; return ERROR;}
+    scan_error_msg = "String spans multiple lines";
+    for(int i = 0; yytext[i] != '\0';i++){
+        if(yytext[i] == '\n') countLines();
+        else scancol++;
+    }
+    yycol = startCol;
+    /* error_location = token_start */
+    return ERROR;
+}
+{untermstring_eof} {
+    yycol = scancol;                 /* opening quote col */
+    scan_error_msg = "Unterminated string constant";
+    scancol += yyleng;
+    return ERROR;
+}
 
- /* Other */;
-{newline}       {scancol = 1; scanlineno++; yylineno = scanlineno;}
-{whitespace}    {updateCol(); /* skip whitespace */}
-.               {return ILLEGAL_TOK;}
+ /* Comments */
+{comment}         { updateCol(); }
+{multlncomment}   {
+    for (int i = 0; yytext[i] != '\0'; i++) {
+        if (yytext[i] == '\n') countLines();
+        else scancol++;
+    }
+}
+{untermcomment} {
+    int startLine = yylineno;
+    int startCol  = scancol;
+
+    for (int i = 0; yytext[i] != '\0'; i++) {
+        if (yytext[i] == '\n') countLines();
+        else scancol++;
+    }
+
+    yylineno = startLine;
+    yycol    = startCol;
+    scan_error_msg  = "Unterminated comment";
+    return ERROR;
+}
+
+ /* Other */
+.                 { updateCol(); return ILLEGAL_TOK;}
 
 %%
 
 /* user routines */
 
+/* TODO:
+Implement this function to keep track of column numbers
+*/
 void updateCol(){
-    yycol = scancol;
-    scancol += yyleng;
+   yycol = scancol;
+   scancol += yyleng;
 }
 
+/* TODO:
+Implement this function to keep track of line numbers
+*/
 void countLines(){
-    yylineno = scanlineno;
-    for (int i=0; i<yyleng; i++){
-        if (yytext[i] == '\n')
-            scanlineno++;
-    }
+   yycol = scancol;
+   scancol = 1;
+   ++yylineno;
 }
-int processChar(){
-    // yytext[0] will be "'", so check yytext[1] for escap
-    if (yytext[1] == '\\'){
-        if (yytext[2] == '\''){
-            yylval.value = '\'';
-        }
-        else if (yytext[2] == 'n'){
-            yylval.value = '\n';
-        }
-        else if (yytext[2] == 't'){
-            yylval.value = '\t';
-        }
-        else if (yytext[2] == '\\'){
-            yylval.value = '\\';
-        }
-        else{
-            yyerrormsg = "Unrecognized escape character in String";
-            return ERROR;
+
+
+/* TODO:
+Implement this function to
+check for illegal escape sequences in string literals
+and
+convert valid escape sequences into escaped characters
+(string[0] == '\\' and string[1] == 'n', then string[0] should be '\n')
+*/
+int processString() {
+    int startCol = scancol;   /* column of opening " */
+    int i = 1;                /* read index: skip opening quote */
+    int out = 0;              /* write index: overwrite yytext with contents only */
+
+    while (yytext[i] != '"' && yytext[i] != '\0') {
+        if (yytext[i] == '\\') {
+            int escCol = startCol + i + 1;   /* column of the '\' */
+
+            i++;  /* move to escaped char */
+            if (yytext[i] == '\0') {
+                yycol = startCol;
+                scan_error_msg = "Unterminated string constant";
+                scancol += yyleng;
+                return ERROR;
+            }
+
+            if (yytext[i] == 'n')      { yytext[out++] = '\n'; i++; }
+            else if (yytext[i] == 't') { yytext[out++] = '\t'; i++; }
+            else if (yytext[i] == '\\'){ yytext[out++] = '\\'; i++; }
+            else if (yytext[i] == '"') { yytext[out++] = '"';  i++; }
+            else {
+                yycol = escCol;
+                scan_error_msg = "Unrecognized escape character in String";
+                scancol += yyleng;
+                return ERROR;
+            }
+        } else {
+            yytext[out++] = yytext[i++];
         }
     }
-    else{
-        // If the character isn't escaped, add it to our temp string.
-        yylval.value = yytext[1];
+
+    if (yytext[i] != '"') {
+        yycol = startCol;
+        scan_error_msg = "Unterminated string constant";
+        scancol += yyleng;
+        return ERROR;
     }
-    return CHARCONST;
+
+    yytext[out] = '\0';  /* yytext = contents */
+    yycol = startCol;    /* token start @ opening quote */
+    scancol += yyleng;   /* advance past full original lex */
+    return STRCONST;
 }
