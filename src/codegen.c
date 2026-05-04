@@ -16,7 +16,7 @@ static int next(void)
 //Register logic here
 char* nextReg() {
     char* r = malloc(10);
-    snprintf(r, sizeof(r), "$t%d", regCount++);
+    snprintf(r, 10, "$t%d", regCount++);
     return r;
 }
 
@@ -25,11 +25,15 @@ void resetRegs() {
 }
 
 
-
 //Assignments here
 
 static void assignments(struct treenode *node)
 {
+    if (node->numChildren < 2) 
+    {
+        expressions(node->children[0]);
+        return;
+    }
     char* rhs = expressions(node->children[1]);
     char* var = node->children[0]->children[0]->name;
 
@@ -38,51 +42,57 @@ static void assignments(struct treenode *node)
 
 
 //Expressions here
-char* expressions(struct treenode *node) {
-    if (!node){
-       return NULL;
-    }
+char *expressions(struct treenode *node) {
+    if (!node) return NULL;
 
-    if (node->nodeKind == INTEGER) {
-        char* r = nextReg();
-        char* varName = node->children[0]->name;
-        fprintf(output,"li %s, %d\n", r, node->val);
-        return r;
-    }
-
-    if (node->numChildren == 1) 
-    {
-        return expressions(node->children[0]);
-    }
-
-    //enter variable logic here
-
-    if (node->numChildren == 3) {
-
-        char* left  = expressions(node->children[0]);
-        char* right = expressions(node->children[2]);
-        char* result = nextReg();
-
-        int op = node->children[1]->val;
-
-        if (op == ADD) {
-            fprintf(output, "add %s, %s, %s\n", result, left, right);
+    switch (node->nodeKind) {
+        case INTEGER: {
+            char *r = nextReg();
+            fprintf(output, "li %s, %d\n", r, node->val);
+            return r;
         }
-        else if (op == SUB){
-            fprintf(output, "sub %s, %s, %s\n", result, left, right);
+        case CHAR_NODE: {
+            char *r = nextReg();
+            fprintf(output, "li %s, %d\n", r, node->val);
+            return r;
         }
-        else if (op == MUL){
-            fprintf(output, "mul %s, %s, %s\n", result, left, right);
+        case VAR: {
+            char *r = nextReg();
+            char *name = node->children[0]->name;
+            fprintf(output, "lw %s, %s\n", r, name);
+            return r;
         }
-        else if (op == DIV) {
-            fprintf(output, "div %s, %s\n", left, right);
-            fprintf(output, "mflo %s\n", result);
-        }
-
-    return result;
-
+        case EXPRESSION:
+        case ADDEXPR:
+        case TERM:
+        case FACTOR:
+        case STATEMENT:
+        case ASSIGNSTMT:
+            if (node->numChildren == 1)
+                return expressions(node->children[0]);
+            if (node->numChildren == 3) {
+                char *left   = expressions(node->children[0]);
+                char *right  = expressions(node->children[2]);
+                char *result = nextReg();
+                int op = node->children[1]->val;
+                if (op == ADD)
+                    fprintf(output, "add %s, %s, %s\n", result, left, right);
+                else if (op == SUB)
+                    fprintf(output, "sub %s, %s, %s\n", result, left, right);
+                else if (op == MUL)
+                    fprintf(output, "mul %s, %s, %s\n", result, left, right);
+                else if (op == DIV) {
+                    fprintf(output, "div %s, %s\n", left, right);
+                    fprintf(output, "mflo %s\n", result);
+                }
+                return result;
+            }
+            return NULL;
+        default:
+            if (node->numChildren == 1)
+                return expressions(node->children[0]);
+            return NULL;
     }
-    return NULL;
 }
 
 
