@@ -64,15 +64,16 @@ char *expressions(struct treenode *node) {
             return r;
         }
         case VAR: {
-            char *r = nextReg();
             char *name = node->children[0]->name;
             if (node->numChildren == 2) {
             char *idx = expressions(node->children[1]);
             char *offset = nextReg();
+            char *r = nextReg();
             fprintf(output, "sll %s, %s, 2\n", offset, idx);  // offset = index * 4
             fprintf(output, "lw %s, %s(%s)\n", r, name, offset);
             return r;
             }
+            char *r = nextReg();
             fprintf(output, "lw %s, %s\n", r, name);
             return r;
         }
@@ -192,6 +193,7 @@ static void genNode(struct treenode *node)
             break;
         case ASSIGNSTMT:
             assignments(node);
+            resetRegs();
             break;
 
         case EXPRESSION:

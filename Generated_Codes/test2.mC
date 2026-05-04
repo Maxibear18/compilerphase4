@@ -10,7 +10,7 @@ div $t3, $t4
 mflo $t5
 add $t6, $t0, $t5
 sw $t6, i
-lw $t7, i
-li $t8, 1
-add $t9, $t7, $t8
-sw $t9, i
+lw $t0, i
+li $t1, 1
+add $t2, $t0, $t1
+sw $t2, i

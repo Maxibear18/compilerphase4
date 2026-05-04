@@ -9,6 +9,6 @@ li $t3, 0
 sw $t3, i
 j L1
 L0:
-li $t4, 5
-sw $t4, i
+li $t0, 5
+sw $t0, i
 L1:
