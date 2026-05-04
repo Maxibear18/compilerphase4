@@ -35,9 +35,16 @@ static void assignments(struct treenode *node)
         return;
     }
     char* rhs = expressions(node->children[1]);
-    char* var = node->children[0]->children[0]->name;
-
-    fprintf(output, "sw %s, %s\n", rhs, var);
+    struct treenode* lhs = node->children[0];
+    char* name = lhs->children[0]->name;
+    if (lhs->numChildren == 2) {
+        char *idx = expressions(lhs->children[1]);
+        char *offset = nextReg();
+        fprintf(output, "sll %s, %s, 2\n", offset, idx);
+        fprintf(output, "sw %s, %s(%s)\n", rhs, name, offset);
+        return;
+    }
+    fprintf(output, "sw %s, %s\n", rhs, name);
 }
 
 
@@ -59,6 +66,13 @@ char *expressions(struct treenode *node) {
         case VAR: {
             char *r = nextReg();
             char *name = node->children[0]->name;
+            if (node->numChildren == 2) {
+            char *idx = expressions(node->children[1]);
+            char *offset = nextReg();
+            fprintf(output, "sll %s, %s, 2\n", offset, idx);  // offset = index * 4
+            fprintf(output, "lw %s, %s(%s)\n", r, name, offset);
+            return r;
+            }
             fprintf(output, "lw %s, %s\n", r, name);
             return r;
         }
