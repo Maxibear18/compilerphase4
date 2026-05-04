@@ -15,7 +15,7 @@ static int next(void)
 
 //Register logic here
 char* nextReg() {
-    static char r[10];
+    char* r = malloc(10);
     snprintf(r, sizeof(r), "$t%d", regCount++);
     return r;
 }
@@ -45,6 +45,7 @@ char* expressions(struct treenode *node) {
 
     if (node->nodeKind == INTEGER) {
         char* r = nextReg();
+        char* varName = node->children[0]->name;
         fprintf(output,"li %s, %d\n", r, node->val);
         return r;
     }
