@@ -12,3 +12,7 @@ Sirr: Worked on making codegen.c, fixed a few errors in parser.y, and verified t
 How to Compile:
 
 make clean; make
+
+Example Usage:
+./mcc ../Sample_Test/test5.mC ../Generated_Codes/test5.mC
+Read file and then write file for argv's
