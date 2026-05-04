@@ -1,0 +1,14 @@
+CS4318 Compiler Project Phase 4
+
+Group Members: Keaton Nylander & Sirr Mena
+
+Contributions:
+
+Keaton: Worked on making codegen.c and fixing a lot of the errors present and worked on testing
+
+Sirr: Worked on making codegen.c, fixed a few errors in parser.y, and verified tests
+
+
+How to Compile:
+
+make clean; make
