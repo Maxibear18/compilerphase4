@@ -77,6 +77,43 @@ char *expressions(struct treenode *node) {
             return r;
         }
         case EXPRESSION:
+            if(node->numChildren == 1)
+            {
+                return expressions(node->children[0]);
+            }
+            else if(node->numChildren == 3)
+            {
+                char* left = expressions(node->children[0]);
+                char* right = expressions(node->children[2]);
+                char* result = nextReg();
+                int op = node->children[1]->val;
+                if(op == LT)
+                {
+                    fprintf(output, "slt %s, %s, %s\n", result, left, right);
+                }
+                else if(op == GT)
+                {
+                    fprintf(output, "slt %s, %s, %s\n", result, right, left);
+                }
+                else if(op == LTE)
+                {
+                    fprintf(output, "sle %s, %s, %s\n", result, left, right);
+                }
+                else if(op == GTE)
+                {
+                    fprintf(output, "sle %s, %s, %s\n", result, right, left);
+                }
+                else if(op == OP_EQ)
+                {
+                    fprintf(output, "seq %s, %s, %s\n", result, left, right);
+                }
+                else if(op == OP_NEQ)
+                {
+                    fprintf(output, "sne %s, %s, %s\n", result, left, right);
+                }
+                return result;
+            }
+            return NULL;
         case ADDEXPR:
         case TERM:
         case FACTOR:
