@@ -5,8 +5,8 @@
 int regCount = 0;
 
 char* nextReg() {
-    static char r[10]
-    prinf(r, "$t%d", regCount++);
+    static char r[10];
+    printf(r, "$t%d", regCount++);
     return r;
 }
 
@@ -18,7 +18,10 @@ void resetRegs() {
 
 //Assignments here
 
+char* assignments(struct treenode *node)
+{
 
+}
 
 
 //Expressions here
@@ -37,8 +40,8 @@ char* expressions(struct treenode *node) {
 
     if (node->numChildren == 3) {
 
-        char* left  = expr(node->children[0]);
-        char* right = expr(node->children[2]);
+        char* left  = expressions(node->children[0]);
+        char* right = expressions(node->children[2]);
         char* result   = nextReg();
 
         int op = node->children[1]->val;
@@ -57,9 +60,10 @@ char* expressions(struct treenode *node) {
             printf("mflo %s\n", result);
         }
 
-    return res;
+    return result;
 
     }
+    return NULL;
 }
 
 
@@ -76,8 +80,16 @@ char* expressions(struct treenode *node) {
 
 
 //calling function
-void generateCode() {
+void generateCode(struct treenode *root, int argc, char *argv[]) {
+    FILE *out = fopen(argv[argc - 1], "w");
+    if(!out)
+    {
+        perror("fopen");
+        return;
+    }
 
+    fprintf(out, ".text\n");
+    fclose(out);
 }
 
 

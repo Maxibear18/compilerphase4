@@ -8,6 +8,7 @@ extern int yyparse(void);
 extern int yy_flex_debug;
 void print_sym_tab(void);
 extern FILE* yyin;
+void generateCode(struct treenode *root, int argc, char *argv[]);
 
 void printhelp(){
     printf("Usage: mcc [--ast] [--sym] [-h|--help] FILE\n");
@@ -23,11 +24,9 @@ int main(int argc, char *argv[]) {
 
     if(argc == 1) {
         yyin = stdin;
-    } else {
-        yyin = fopen(argv[argc - 1], "r");
     }
     // Skip first arg (program name), then check all but last for options.
-    for(int i=1; i < argc - 1; i++){
+    for(int i=1; i < argc - 2; i++){
         if(strcmp(argv[i],"-h")==0 || strcmp(argv[i],"--help")==0){
             printhelp();
             return 0;
@@ -45,18 +44,14 @@ int main(int argc, char *argv[]) {
 
     }
 
-    yyin = fopen(argv[argc - 1],"r");
+    yyin = fopen(argv[argc - 2],"r");
     if(!yyin){
-        printf("error: unable to read source file %s\n",argv[argc-1]);
+        printf("error: unable to read source file %s\n",argv[argc-2]);
         return -1;
     }
     yy_flex_debug = 0;
     if (!yyparse()){
-        printf("Compilation finished.\n\n");
-        if(p_ast)
-            printAst(ast, 1);
-        if(p_symtab)
-            print_sym_tab();
+        generateCode(ast, argc, argv);
     }
     fclose(yyin);
     return 0;

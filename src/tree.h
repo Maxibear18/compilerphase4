@@ -58,6 +58,4 @@ void addChild(struct treenode *parent, struct treenode *child);
 void printAst(struct treenode *root, int nestLevel);
 
 
-#endifmChildren]
-
 #endif
