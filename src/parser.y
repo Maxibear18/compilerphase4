@@ -723,7 +723,7 @@ var
           }
           $$ = maketree(VAR);
           $$->val = (entry != NULL) ? entry->data_type : -1;
-          addChild($$, maketreeWithVal(IDENTIFIER, -1));
+          addChild($$, maketreeWithVal(IDENTIFIER, $2));
       }
     | ID LBRACKET expression RBRACKET
   {
@@ -749,7 +749,7 @@ var
 
       $$ = maketree(VAR);
       $$->val = (entry != NULL) ? entry->data_type : -1;
-      addChild($$, maketreeWithVal(IDENTIFIER, -1));
+      addChild($$, maketreeWithVal(IDENTIFIER, $2));
       addChild($$, $3);
   };
 
@@ -774,7 +774,7 @@ funCallExpr
   }
   $$ = maketree(FUNCCALLEXPR);
   $$->val = (entry != NULL) ? entry->data_type : -1;
-  addChild($$, maketreeWithVal(IDENTIFIER, -1));
+  addChild($$, maketreeWithVal(IDENTIFIER, $2));
   addChild($$, $4);
   in_fun_call_args--;
 };
